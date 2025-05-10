@@ -24,6 +24,7 @@ exports.findProductById = async(id)=>{
 exports.addNewProduct = async(product)=>{
     const db = getDb().collection('products');
     try{
+     
      const result = await db.insertOne(product);
      return result;
     }catch(err){
@@ -48,7 +49,6 @@ exports.updateProduct = async(product,id)=>{
 exports.deleteProduct = async(id)=>{
    const db = getDb().collection('products');
  
-
     try{
      const result = await db.deleteOne(
       { _id: new ObjectId(id) },
