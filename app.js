@@ -2,10 +2,12 @@ const express = require('express');
 const app = express();
 const {connectToMongo} = require('./util/database');
 const productRoutes = require('./routes/product_routes')
+const userRoutes = require('./routes/user_routes');
 
 app.use(express.json());
 
 app.use('/api',productRoutes);
+app.use('/user',userRoutes);
 
 const startServer = async () => {
   try {
