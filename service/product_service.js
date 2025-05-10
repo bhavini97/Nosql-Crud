@@ -26,6 +26,7 @@ exports.addNewProduct = async(product)=>{
     try{
      
      const result = await db.insertOne(product);
+     const addToCart = await getDb().collection('users').
      return result;
     }catch(err){
       throw err;
