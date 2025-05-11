@@ -3,11 +3,13 @@ const app = express();
 const {connectToMongo} = require('./util/database');
 const productRoutes = require('./routes/product_routes')
 const userRoutes = require('./routes/user_routes');
+const cartRoutes = require('./routes/cart_routes');
 
 app.use(express.json());
 
 app.use('/api',productRoutes);
 app.use('/user',userRoutes);
+app.use('/user/cart',cartRoutes);
 
 const startServer = async () => {
   try {

@@ -1,6 +1,6 @@
 
 class User{
-    constructor(username,email,password,cart ={}){
+    constructor(username,email,password,cart =[]){
         this.username = username;
         this.email = email;
         this.password = password;
