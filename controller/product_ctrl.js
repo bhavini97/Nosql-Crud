@@ -32,6 +32,7 @@ exports.addNewProduct = async(req,res)=>{
    if(!userId){
       return res.status(500).json({message:'token not found'})
    }
+
    const title = req.body.title;
    const price= req.body.price;
    const description = req.body.description;
@@ -39,7 +40,8 @@ exports.addNewProduct = async(req,res)=>{
       return res.status(500).json({message:'all product parameters should be present'})
     }
 
-   const product = new Product(title,price,description,userId);
+   const product = {title,price,description,userId};
+   
    try{
      const result = await productService.addNewProduct(product);
      return res.status(200).json(result);
@@ -66,7 +68,7 @@ exports.updateProduct = async(req,res)=>{
     if(!id){
        return res.status(500).json({message:'id not found'});
    }
-   const product = new Product(title,price,description,userId);
+   const product = {title,price,description,userId};
    try{
       const result = await productService.updateProduct(product,id);
       res.status(200).json(result);
@@ -76,7 +78,7 @@ exports.updateProduct = async(req,res)=>{
 }
 
 exports.deleteProduct = async(req,res)=>{
- const id = req.query.id;
+ const id = req.query.productId;
    if(!id){
        return res.status(500).json({message:'id not found'});
    }

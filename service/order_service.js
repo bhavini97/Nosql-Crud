@@ -1,52 +1,46 @@
-const userService = require("../service/user_service");
-const { getDb } = require("../util/database");
-const { ObjectId } = require("mongodb");
-const Order = require('../models/order');
+const User = require("../models/user_model");
+const Order = require("../models/order");
+const mongoose = require('mongoose');
 
 exports.createOrder = async (userId) => {
-  userId = new ObjectId(userId);
-  const db = getDb();
-  const usersCollection = db.collection("users");
-  const ordersCollection = db.collection("orders");
-
   try {
-    const user = await userService.findUserById(userId);
+    const user = await User.findById(userId);
     if (!user) {
       throw new Error("user not found");
     }
     if (!Array.isArray(user.cart) || user.cart.length === 0) {
       throw new Error("Cart is empty");
     }
-    const order = {
+    const totalOrderPrice = user.cart.reduce(
+      (sum, item) => sum + item.totalPrice,0
+    );
+    
+    const orderData = {
       userId,
       products: user.cart,
+      totalOrderPrice,
       createdAt: new Date(),
-      totalOrderPrice: user.cart.reduce(
-        (sum, item) => sum + item.totalPrice,0),
     };
-    const insertedOrder = await ordersCollection.insertOne(order);
+    const order = await Order.create(orderData);
 
-    // Clearing  the user's cart after order placement
-    await usersCollection.updateOne(
-      { _id: userId },
-      { $set: { cart: [] } }
-    );
+    // Clear user's cart
+    user.cart = [];
+    await user.save();
 
-    return insertedOrder;
-    
+    return order;
   } catch (err) {
     throw err;
   }
 };
 
-exports.getOrder = async(orderId)=>{
-    orderId = new ObjectId(orderId);
-     const db = getDb();
-     const ordersCollection = db.collection("orders");
-    try{
-        const order = await ordersCollection.findOne({_id:orderId});
-        return order.products;
-    }catch(err){
-       throw err;
+exports.getOrder = async (orderId) => {
+   try {
+    const order = await Order.findById(orderId);
+    if (!order) {
+      throw new Error("Order not found");
     }
-}
+    return order.products;
+  } catch (err) {
+    throw err;
+  }
+};

@@ -15,8 +15,8 @@ app.use('/user/order',orderRoutes);
 
 const startServer = async () => {
   try {
-    const db = await connectToMongo(); // await DB connection
-    
+    await connectToMongo(); // await DB connection
+       
     app.listen(3000, () => {
       console.log('Server running on port 3000');
     });

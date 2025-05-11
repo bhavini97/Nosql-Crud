@@ -1,77 +1,83 @@
-const { getDb } = require("../util/database");
-const { ObjectId } = require("mongodb");
+const Product = require('../models/product')
 const cartService = require("./cart_service");
+const mongoose = require('mongoose');
 
 exports.findAllProducts = async () => {
-  const db = getDb().collection("products");
   try {
-    const result = await db.find().toArray();
-    return result;
+    const products = await Product.find(); 
+    return products;
   } catch (err) {
     throw err;
   }
 };
 
 exports.findProductById = async (id) => {
-  const db = getDb().collection("products");
   try {
-    const result = await db.findOne({ _id: new ObjectId(id) });
-    return result;
+    const product = await Product.findById(id); 
+    if (!product) {
+      throw new Error('Product not found');
+    }
+    return product;
   } catch (err) {
     throw err;
   }
 };
 
 exports.addNewProduct = async (product) => {
-  const db = getDb().collection("products");
   try {
-    product.userId = new ObjectId(product.userId);
-    //console.log(product.userId);
-    const matchProduct = await db.findOne({
+   
+    // Check if the product already exists
+    const matchProduct = await Product.findOne({
       title: product.title,
       userId: product.userId,
     });
 
     if (matchProduct) {
-      const addToCart = await cartService.addToCart(
-        matchProduct,
-        product.userId
-      );
-      return matchProduct;
+      // If product exists, add it to the cart
+   
+      const addToCart = await cartService.addToCart(matchProduct, product.userId);
+      return matchProduct; // Returning the existing product
     }
-    const insertedProduct = await db.insertOne(product);
-    // constructing a proper product object with _id
-    const fullProduct = {
-      ...product,
-      _id: insertedProduct.insertedId,
-    };
 
-    const addToCart = await cartService.addToCart(fullProduct, product.userId);
-    return insertedProduct;
+    // Creating and saving the new product
+    const newProduct = new Product(product);
+    await newProduct.save(); // Saving the new product to the database
+
+    // Adding the newly added product to the cart
+    const addToCart = await cartService.addToCart(newProduct, product.userId);
+
+    return newProduct; // Return the newly added product
   } catch (err) {
-    throw err;
+    throw new Error('Error adding new product: ' + err.message);
   }
 };
 
 exports.updateProduct = async (product, id) => {
-  const db = getDb().collection("products");
-
+ 
   try {
-    const result = await db.updateOne(
-      { _id: new ObjectId(id) },
-      { $set: product }
+    const result = await Product.findByIdAndUpdate(
+      { _id: id },
+      { $set: product },
+      { new: true } // Option to return the updated document
     );
+    if (!result) {
+    throw new Error('Product not found');
+  }
+
     return result;
   } catch (err) {
     throw err;
   }
 };
 exports.deleteProduct = async (id) => {
-  const db = getDb().collection("products");
+  try{
+  const deletedProduct = await Product.findByIdAndDelete(id);
 
-  try {
-    const result = await db.deleteOne({ _id: new ObjectId(id) });
-    return result;
+    if (!deletedProduct) {
+      throw new Error('Product not found');
+    }
+
+    return deletedProduct;
   } catch (err) {
     throw err;
   }

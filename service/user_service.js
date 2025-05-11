@@ -1,18 +1,17 @@
-const { getDb } = require("../util/database");
-const { ObjectId } = require("mongodb");
+const User = require('../models/user_model');
 const bcrypt = require("bcrypt");
+const mongoose = require('mongoose');
 
 exports.addUser = async (user) => {
-  const db = getDb().collection("users");
+ 
   try {
-    const match = await db.findOne({ email: user.email });
+    const match = await User.findOne({ email: user.email });
     if (match) {
       throw new Error("User with same email already exist");
     }
     //  console.log(user.password)
-    const hashedPassword = await bcrypt.hash(String(user.password), 10);
-    user.password = hashedPassword;
-    const result = await db.insertOne(user);
+    const newUser = new User(user);
+    const result = await newUser.save();
     return result;
   } catch (err) {
     throw err;
@@ -20,11 +19,8 @@ exports.addUser = async (user) => {
 };
 
 exports.loginUser = async (email) => {
-  const db = getDb().collection("users");
   try {
-    const match = await db.findOne({
-      email: email,
-    });
+    const match = await User.findOne({ email });
     return match;
   } catch (err) {
     throw err;
@@ -32,11 +28,8 @@ exports.loginUser = async (email) => {
 };
 
 exports.findUserById = async (id) => {
-  const db = getDb().collection("users");
-  try {
-    const match = await db.findOne({
-      _id: new ObjectId(id),
-    });
+   try {
+    const match = await User.findById(id);
     return match;
   } catch (err) {
     throw err;

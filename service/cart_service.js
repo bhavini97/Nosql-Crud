@@ -1,83 +1,64 @@
-const { getDb } = require("../util/database");
-const { ObjectId } = require("mongodb");
-const userService = require("./user_service");
+const User = require('../models/user_model'); 
+const userService = require('./user_service');
+const mongoose = require('mongoose');
 
 exports.addToCart = async (product, userId) => {
-  const db = getDb().collection("users");
   try {
-    console.log(product);
-    const user = await userService.findUserById(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
 
-    // Initialize cart if it's not set or not an array
-    //console.log(user);
-    if (!Array.isArray(user.cart)) {
-      user.cart = [];
-    }
-    if (!product._id) {
-      throw new Error("Product ID missing in addToCart");
-    }
-    let existingItem;
-    if (user.cart.length > 0) {
-      existingItem = user.cart.find(
-        (item) => item.productId.toString() === product._id.toString()
-      );
-    }
+    const user = await User.findById(userId);
+   
+    if (!user) {throw new Error("User not found");}
+
+    if (!product._id) throw new Error("Product ID missing in addToCart");
+
+    const productIdStr = product._id.toString();
+    const existingItem = user.cart.find(
+      (item) => item.productId.toString() === productIdStr
+    );
 
     if (existingItem) {
       existingItem.quantity += 1;
       existingItem.totalPrice = existingItem.productPrice * existingItem.quantity;
     } else {
-      user.cart.push({ productId: product._id, quantity: 1 , productPrice : product.price, totalPrice: product.price});
+      user.cart.push({
+        productId: product._id,
+        quantity: 1,
+        productPrice: product.price,
+        totalPrice: product.price,
+      });
     }
 
-    // update the user databse to see the changes 
-    const result = await db.updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { cart: user.cart } }
-    );
+    const result = await user.save();
     return result;
   } catch (err) {
     throw err;
   }
 };
-
-exports.deleteFromCart = async (userId,productId) => {
-     const db = getDb().collection("users");
-  productId = new ObjectId(productId);
-  userId = new ObjectId(userId);
+exports.deleteFromCart = async (userId, productId) => {
   try {
-    const user = await userService.findUserById(userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-    let existingItem;
-    if (user.cart.length > 0) {
-      const existingItemIndex = user.cart.findIndex(
-        (item) => item.productId.toString() === productId.toString()
-      );
 
-      if (existingItemIndex !== -1) {
-        const productPrice =  user.cart[existingItemIndex].productPrice;
-        user.cart[existingItemIndex].quantity -= 1;
-         
-        if (user.cart[existingItemIndex].quantity <= 0) {
-          // Remove the item from cart
-          user.cart.splice(existingItemIndex, 1);
-        }else{
-          user.cart[existingItemIndex].totalPrice = productPrice* user.cart[existingItemIndex].quantity
-        }
-        const result = await db.updateOne(
-      { _id: new ObjectId(userId) },
-      { $set: { cart: user.cart } }
+    const user = await User.findById(userId);
+    if (!user) throw new Error("User not found");
+
+    const productIdStr = productId.toString();
+    const index = user.cart.findIndex(
+      (item) => item.productId.toString() === productIdStr
     );
-    return result;
 
+    if (index !== -1) {
+      user.cart[index].quantity -= 1;
+
+      if (user.cart[index].quantity <= 0) {
+        user.cart.splice(index, 1);
+      } else {
+        user.cart[index].totalPrice =
+          user.cart[index].quantity * user.cart[index].productPrice;
       }
-    }else{
-        throw new Error(`Cart doesn't exist`);
+
+      const result = await user.save();
+      return result;
+    } else {
+      throw new Error("Product not found in cart");
     }
   } catch (err) {
     throw err;

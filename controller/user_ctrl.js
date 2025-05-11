@@ -1,6 +1,5 @@
 const userService = require("../service/user_service");
 const bcrypt = require("bcrypt");
-const User = require("../models/user_model");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
@@ -14,10 +13,16 @@ exports.addNewUser = async (req, res) => {
       .status(500)
       .json({ message: "all product parameters should be present" });
   }
-  const user = new User(username, email, password);
+  const hashedPassword = await bcrypt.hash(String(password), 10);
+  const user = {
+      username,
+      email,
+      password: hashedPassword,
+      cart: []
+    };
   try {
     const result = await userService.addUser(user);
-    return res.status(200).json(result);
+    return res.status(200).json({message:"user added successfully"});
   } catch (err) {
     return res.status(500).json(err.message);
   }
@@ -34,14 +39,15 @@ exports.loginUser = async (req, res) => {
   }
   try {
     const user = await userService.loginUser(email);
-
+      
     //user with entered email address not found
     if (!user) {
       return res.status(401).json({ message: "unregistered email address" });
     }
-
+ 
     // verify entered password with db password
     const match = await bcrypt.compare(String(password), user.password);
+    
     if (!match) {
       return res.status(402).json({ message: "invalid password" });
     }
