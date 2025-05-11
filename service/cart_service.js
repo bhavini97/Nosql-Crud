@@ -28,10 +28,12 @@ exports.addToCart = async (product, userId) => {
 
     if (existingItem) {
       existingItem.quantity += 1;
+      existingItem.totalPrice = existingItem.productPrice * existingItem.quantity;
     } else {
-      user.cart.push({ productId: product._id, quantity: 1 });
+      user.cart.push({ productId: product._id, quantity: 1 , productPrice : product.price, totalPrice: product.price});
     }
 
+    // update the user databse to see the changes 
     const result = await db.updateOne(
       { _id: new ObjectId(userId) },
       { $set: { cart: user.cart } }
@@ -58,11 +60,14 @@ exports.deleteFromCart = async (userId,productId) => {
       );
 
       if (existingItemIndex !== -1) {
+        const productPrice =  user.cart[existingItemIndex].productPrice;
         user.cart[existingItemIndex].quantity -= 1;
-
+         
         if (user.cart[existingItemIndex].quantity <= 0) {
           // Remove the item from cart
           user.cart.splice(existingItemIndex, 1);
+        }else{
+          user.cart[existingItemIndex].totalPrice = productPrice* user.cart[existingItemIndex].quantity
         }
         const result = await db.updateOne(
       { _id: new ObjectId(userId) },
